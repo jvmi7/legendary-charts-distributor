@@ -2,7 +2,16 @@
 
 # Legendary Charts Distributor
 
-A TypeScript-based winner selection system for the Legendary Charts NFT collection on Base network. This tool implements a fair and deterministic algorithm to select winners from different categories of participants.
+An **open-source transparency tool** for the [Charts NFT project](https://jvmi.art/charts). This TypeScript-based system demonstrates exactly how winners are selected for Charts distributions and giveaways, ensuring complete transparency and fairness in the selection process.
+
+## 🌟 Transparency & Trust
+
+This codebase is publicly available to provide full transparency into our winner selection methodology. Anyone can:
+
+- ✅ Verify the selection algorithms are fair and unbiased
+- ✅ Reproduce the results using the same data and seeds
+- ✅ Audit the code for any potential manipulation
+- ✅ Understand exactly how different holder categories are weighted
 
 ## Overview
 
@@ -21,32 +30,27 @@ The Legendary Charts Distributor selects **16 total winners** across three categ
 - 🚫 **Duplicate Prevention**: Ensures no address wins in multiple categories
 - 📊 **Detailed Logging**: Comprehensive output with progress indicators
 
-## Prerequisites
+## Quick Start
 
-- Node.js (v18 or higher)
-- TypeScript
-- Alchemy API key for Base network
-
-## Installation
-
-1. Clone the repository:
+1. Clone and install:
 
 ```bash
 git clone <repository-url>
 cd legendary-charts-distributor
-```
-
-2. Install dependencies:
-
-```bash
 npm install
 ```
 
-3. Set up environment variables:
+2. Add your Alchemy API key:
 
 ```bash
 cp .env.example .env
 # Edit .env and add your ALCHEMY_API_KEY
+```
+
+3. Run the selection:
+
+```bash
+npm start
 ```
 
 ## Project Structure
@@ -62,40 +66,13 @@ src/
     └── holders.csv         # NFT holder addresses and balances
 ```
 
-## Data Files
+## How It Works
 
-### `src/data/burn_txs.csv`
-
-Contains transaction hashes with columns:
-
-- `TxHash`: Transaction hash
-- `Index`: Transaction index
-- `BlockNumber`: Block number
-- Additional transaction metadata
-
-### `src/data/holders.csv`
-
-Contains holder information with columns:
-
-- `HolderAddress`: Ethereum address
-- `Balance`: Number of NFTs held
-
-## Usage
-
-Run the complete winner selection process:
-
-```bash
-npm start
-```
-
-The system will:
-
-1. Analyze burn transactions to get top 8 addresses
-2. Load and process holder data (4,304+ holders)
-3. Fetch NFT metadata for the Charts collection
-4. Filter for greyscale NFTs based on palette attribute
-5. Select winners using deterministic algorithms
-6. Output all 16 winners with clear category labels
+1. **Analyze Burn Transactions** → Get top 8 addresses from `src/data/burn_txs.csv`
+2. **Process Holders** → Load 4,304+ holders from `src/data/holders.csv`
+3. **Fetch NFT Metadata** → Get Charts collection data and filter greyscale NFTs
+4. **Select Winners** → Use deterministic algorithms to pick 8 winners total
+5. **Output Results** → Display all 16 winners with clear categories
 
 ## Algorithm Details
 
@@ -117,17 +94,10 @@ The system will:
 
 ## Configuration
 
-Key constants in `src/config.ts`:
+Key settings in `src/config.ts`:
 
-- `CHARTS_CONTRACT_ADDRESS`: The NFT collection contract address
-- `RANDOM_SEED`: Base seed for deterministic selection (default: 12345)
-- `ALCHEMY_API_KEY`: Your Alchemy API key for Base network
-
-## API Dependencies
-
-- **Alchemy API**: For NFT metadata and blockchain data on Base network
-- **Viem**: For direct smart contract interactions
-- **Base Network**: Layer 2 Ethereum network where the NFT collection exists
+- `RANDOM_SEED`: Deterministic seed (12345) - change this for different results
+- `CHARTS_CONTRACT_ADDRESS`: NFT collection contract on Base network
 
 ## Output Format
 
@@ -152,46 +122,21 @@ The system outputs winners in a clear, organized format:
 ...
 ```
 
-## Development
+## Verification
 
-### Build
+**Reproduce Results:**
 
-```bash
-npm run build
-```
+1. Same data + same seed = same winners every time
+2. All source data included in `src/data/`
+3. Selection logic in `src/index.ts`
 
-### Type Check
+**Key Points:**
 
-```bash
-npm run type-check
-```
+- ✅ Deterministic algorithm
+- ✅ Weighted by NFT balance
+- ✅ No duplicate winners
+- ✅ All code is public
 
-### Run Development
+## License
 
-```bash
-npm run dev
-```
-
-## Technical Implementation
-
-- **TypeScript**: Full type safety and modern JavaScript features
-- **CSV Processing**: Efficient parsing of large holder datasets
-- **Batch Processing**: Handles large NFT collections with rate limiting
-- **Error Handling**: Comprehensive error handling for API calls and data processing
-- **Async/Await**: Modern asynchronous programming patterns
-
-## Troubleshooting
-
-### Common Issues
-
-1. **API Rate Limits**: The system includes built-in batch processing to respect API limits
-2. **Network Issues**: Automatic retry logic for failed blockchain calls
-3. **Large Collections**: Pagination support for collections with 1000+ NFTs
-
-### Environment Setup
-
-Ensure your `.env` file contains:
-
-```
-ALCHEMY_API_KEY=your_alchemy_api_key_here
-```
+MIT License - This code is freely available for anyone to use, modify, and audit.
