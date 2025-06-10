@@ -1,120 +1,105 @@
 /** @format */
 
-import path from 'path';
-import { createReadStream } from 'fs';
-import { createObjectCsvWriter } from 'csv-writer';
-import csv from 'csv-parser';
-import { createPublicClient, http } from 'viem';
-import { base } from 'viem/chains';
-import dotenv from 'dotenv';
+import { getTopAddresses } from './getAddresses';
+import { getShuffledWeightedHoldersList } from './getHolders';
+import { getGreyscaleTokenIds, getGreyscaleHolders } from './getGreyscaleHolders';
+import { CHARTS_CONTRACT_ADDRESS, RANDOM_SEED } from './config';
 
-// Load environment variables
-dotenv.config();
+async function main() {
+  const winners: string[] = [];
 
-// Get Alchemy API key from environment variables
-const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
+  console.log('🔥 Getting top addresses from burn transactions...');
+  const topAddresses = await getTopAddresses();
+  winners.push(...topAddresses);
 
-if (!ALCHEMY_API_KEY) {
-  console.error('Alchemy API key not found. Please add ALCHEMY_API_KEY to your .env file.');
-  process.exit(1);
-}
+  const holders = await getShuffledWeightedHoldersList(RANDOM_SEED);
+  console.log(`Got ${holders.length} weighted holders`);
 
-// Create a public client for Base network
-const client = createPublicClient({
-  chain: base,
-  transport: http(`https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`)
-});
+  console.log('🎨 Getting greyscale NFT token IDs...');
+  const greyscaleTokenIds = await getGreyscaleTokenIds(CHARTS_CONTRACT_ADDRESS, 1000);
+  console.log(`Found ${greyscaleTokenIds.length} greyscale NFTs`);
 
-// Path to the input and output CSV files
-const inputFile = path.join(__dirname, './data/burn_txs.csv');
-const outputFile = path.join(__dirname, './data/burn_address_leaderboard.csv');
+  console.log('👥 Getting holders of greyscale NFTs...');
+  const greyscaleHolders = await getGreyscaleHolders(greyscaleTokenIds);
+  console.log(`Found ${greyscaleHolders.length} unique greyscale NFT holders`);
 
-// Interface for transaction data
-interface Transaction {
-  txHash: string;
-}
+  // First: pick 4 random holders from the main collection
+  console.log('🎯 Picking 4 random collection holders...');
+  const selectedCollectionHolders = pickRandomWithSeed(holders, 4, RANDOM_SEED);
+  console.log('Selected collection holders ✅');
+  winners.push(...selectedCollectionHolders);
 
-// Interface for address count data
-interface AddressCount {
-  address: string;
-  txCount: number;
-}
+  // Remove the selected collection holders from greyscale holders to prevent double selection
+  const filteredGreyscaleHolders = greyscaleHolders.filter(
+    (holder) => !selectedCollectionHolders.includes(holder)
+  );
 
-async function getTransactionSender(txHash: string): Promise<string> {
-  try {
-    const tx = await client.getTransaction({ hash: txHash as `0x${string}` });
-    return tx.from;
-  } catch (error) {
-    console.error(`Error fetching transaction ${txHash}:`, error);
-    return '';
-  }
-}
+  // Then: pick 4 random greyscale holders from the remaining list
+  console.log('\n🎲 Picking 4 random greyscale holders from remaining list...');
+  const selectedGreyscaleHolders = pickRandomWithSeed(filteredGreyscaleHolders, 4, RANDOM_SEED + 1); // Use different seed
+  console.log('Selected greyscale holders ✅');
+  winners.push(...selectedGreyscaleHolders);
 
-async function processBurnTransactions() {
-  const transactions: Transaction[] = [];
-  const addressCounts: Record<string, number> = {};
+  console.log(`\n🏆 Total winners: ${winners.length}`);
 
-  // Read the CSV file
-  console.log('Reading burn transactions from CSV...');
-  await new Promise<void>((resolve) => {
-    createReadStream(inputFile)
-      .pipe(csv())
-      .on('data', (data: any) => {
-        // Use the correct column name from the CSV sample
-        const txHash = data.TxHash;
-        if (txHash) {
-          transactions.push({ txHash });
-        }
-      })
-      .on('end', () => {
-        resolve();
-      });
+  console.log('\n🎉 FINAL WINNERS:');
+  console.log('='.repeat(50));
+
+  console.log('\n📈 Top 8 Burn Addresses:');
+  topAddresses.forEach((address, index) => {
+    console.log(`  ${index + 1}. ${address}`);
   });
 
-  console.log(`Found ${transactions.length} transactions. Fetching sender addresses...`);
-
-  // Process transactions in batches to avoid rate limiting
-  const batchSize = 5;
-  for (let i = 0; i < transactions.length; i += batchSize) {
-    const batch = transactions.slice(i, i + batchSize);
-    console.log(
-      `Processing batch ${i / batchSize + 1}/${Math.ceil(transactions.length / batchSize)}...`
-    );
-
-    await Promise.all(
-      batch.map(async (tx) => {
-        const address = await getTransactionSender(tx.txHash);
-        if (address) {
-          addressCounts[address] = (addressCounts[address] || 0) + 1;
-        }
-      })
-    );
-
-    // Add a small delay between batches to avoid rate limiting
-    if (i + batchSize < transactions.length) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-  }
-
-  // Convert the address counts to an array and sort by count in descending order
-  const sortedAddressCounts: AddressCount[] = Object.entries(addressCounts)
-    .map(([address, txCount]) => ({ address, txCount }))
-    .sort((a, b) => b.txCount - a.txCount);
-
-  // Write the results to a new CSV file
-  const csvWriter = createObjectCsvWriter({
-    path: outputFile,
-    header: [
-      { id: 'address', title: 'ADDRESS' },
-      { id: 'txCount', title: 'TX_COUNT' }
-    ]
+  console.log('\n🎨 4 Collection Holders:');
+  selectedCollectionHolders.forEach((address, index) => {
+    console.log(`  ${index + 1}. ${address}`);
   });
 
-  await csvWriter.writeRecords(sortedAddressCounts);
-  console.log(`Results written to ${outputFile}`);
+  console.log('\n🖤 4 Greyscale Holders:');
+  selectedGreyscaleHolders.forEach((address, index) => {
+    console.log(`  ${index + 1}. ${address}`);
+  });
+
+  console.log('\n' + '='.repeat(50));
 }
 
-// Run the main function
-processBurnTransactions().catch((error) => {
-  console.error('Error processing burn transactions:', error);
-});
+/**
+ * Simple seeded random number generator
+ * @param seed - The seed value
+ * @returns A function that generates random numbers between 0 and 1
+ */
+function createSeededRandom(seed: number) {
+  let state = seed;
+  return function () {
+    state = (state * 1664525 + 1013904223) % 4294967296;
+    return state / 4294967296;
+  };
+}
+
+/**
+ * Pick random items from an array using a seeded random generator
+ * @param array - The array to pick from
+ * @param count - Number of items to pick
+ * @param seed - The seed for deterministic randomness
+ * @returns Array of randomly selected items
+ */
+function pickRandomWithSeed<T>(array: T[], count: number, seed: number): T[] {
+  if (count >= array.length) {
+    return [...array]; // Return all items if count is greater than array length
+  }
+
+  const random = createSeededRandom(seed);
+  const shuffled = [...array]; // Create a copy
+  const selected: T[] = [];
+
+  // Fisher-Yates shuffle to select random items
+  for (let i = 0; i < count; i++) {
+    const randomIndex = Math.floor(random() * (shuffled.length - i)) + i;
+    [shuffled[i], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[i]];
+    selected.push(shuffled[i]);
+  }
+
+  return selected;
+}
+
+main().catch(console.error);
