@@ -195,11 +195,3 @@ Ensure your `.env` file contains:
 ```
 ALCHEMY_API_KEY=your_alchemy_api_key_here
 ```
-
-## License
-
-[Add your license information here]
-
-## Contributing
-
-[Add contribution guidelines here]
