@@ -1,5 +1,8 @@
 <!-- @format -->
 
+![81 1](https://github.com/user-attachments/assets/76fbab1f-216c-46f5-870a-6f2be7d62834)
+
+
 # Legendary Charts Distributor
 
 An **open-source transparency tool** for the [Charts NFT project](https://jvmi.art/charts). This TypeScript-based system demonstrates exactly how winners are selected for Charts distributions and giveaways, ensuring complete transparency and fairness in the selection process.
