@@ -16,7 +16,7 @@ async function main() {
   console.log(`Got ${holders.length} weighted holders`);
 
   console.log('🎨 Getting greyscale NFT token IDs...');
-  const greyscaleTokenIds = await getGreyscaleTokenIds(CHARTS_CONTRACT_ADDRESS, 1000);
+  const greyscaleTokenIds = await getGreyscaleTokenIds(CHARTS_CONTRACT_ADDRESS, 10_000);
   console.log(`Found ${greyscaleTokenIds.length} greyscale NFTs`);
 
   console.log('👥 Getting holders of greyscale NFTs...');
